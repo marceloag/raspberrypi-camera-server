@@ -27,7 +27,7 @@ app.get('/capturar', (req, res) => {
   const imagePath = path.join(IMAGES_DIR, filename);
   
   // Comando para capturar una imagen con raspistill
-  const cmd = `raspistill -o ${imagePath} -t 500 -w 1920 -h 1080 -q 100`;
+  const cmd = `fswebcam -r 1280x720 --no-banner ${imagePath}`;
   
   console.log(`Ejecutando: ${cmd}`);
   
