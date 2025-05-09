@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Camera</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .image-container {
+            margin: 20px 0;
+            position: relative;
+        }
+        .camera-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .no-image {
+            padding: 40px;
+            background-color: #eee;
+            border-radius: 4px;
+            color: #666;
+        }
+        .capture-btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .capture-btn:hover {
+            background-color: #45a049;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .refresh-btn {
+            background-color: #2196F3;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Raspberry Pi Camera</h1>
+        
+        <div class="image-container">
+            <% if (latestImage) { %>
+                <img src="<%= latestImage %>" alt="Última imagen capturada" class="camera-image" id="camera-image">
+                <p class="timestamp">Última actualización: <span id="timestamp"><%= timestamp %></span></p>
+            <% } else { %>
+                <div class="no-image">
+                    <p>No hay imágenes disponibles</p>
+                    <p>Haz clic en el botón "Capturar nueva imagen" para tomar una foto</p>
+                </div>
+            <% } %>
+        </div>
+        
+        <div>
+            <a href="/capturar" class="capture-btn">Capturar nueva imagen</a>
+            <button onclick="location.reload()" class="capture-btn refresh-btn">Actualizar página</button>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3>Enlaces útiles:</h3>
+            <p>
+                <a href="/ultima">Ver información de la última imagen (JSON)</a>
+                <br>
+                <a href="/lista">Ver todas las imágenes disponibles (JSON)</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refrescar la página cada 30 segundos
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+        
+        // Función para formatear la fecha
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        // Formatear la fecha mostrada
+        document.addEventListener('DOMContentLoaded', () => {
+            const timestampElement = document.getElementById('timestamp');
+            if (timestampElement) {
+                timestampElement.textContent = formatDate(timestampElement.textContent);
+            }
+        });
+    </script>
+</body>
+</html>

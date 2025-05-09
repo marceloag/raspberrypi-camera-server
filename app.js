@@ -10,6 +10,10 @@ const PORT = 3000;
 // Directorio donde se guardarán las imágenes
 const IMAGES_DIR = path.join(__dirname, 'images');
 
+// Configurar el motor de plantillas EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 // Asegurarse de que el directorio de imágenes existe
 if (!fs.existsSync(IMAGES_DIR)) {
   fs.mkdirSync(IMAGES_DIR, { recursive: true });
@@ -106,6 +110,39 @@ app.get('/lista', (req, res) => {
       cantidad: imageUrls.length,
       imagenes: imageUrls
     });
+  });
+});
+
+// Función para obtener la última imagen
+function getLatestImage() {
+  try {
+    const files = fs.readdirSync(IMAGES_DIR);
+    const imageFiles = files.filter(file => file.toLowerCase().endsWith('.jpg'));
+    
+    if (imageFiles.length === 0) {
+      return null;
+    }
+    
+    const latestImage = imageFiles.map(file => {
+      return {
+        filename: file,
+        mtime: fs.statSync(path.join(IMAGES_DIR, file)).mtime
+      };
+    }).sort((a, b) => b.mtime - a.mtime)[0].filename;
+    
+    return latestImage;
+  } catch (error) {
+    console.error('Error al obtener la última imagen:', error);
+    return null;
+  }
+}
+
+// Ruta principal que muestra la landing page con la última foto
+app.get('/', (req, res) => {
+  const latestImage = getLatestImage();
+  res.render('index', { 
+    latestImage: latestImage ? `/images/${latestImage}` : null,
+    timestamp: new Date().toISOString()
   });
 });
 
