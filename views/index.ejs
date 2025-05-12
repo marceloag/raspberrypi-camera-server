@@ -1,304 +1,349 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi Camera</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ina Galeria de Imagenes</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            text-align: center;
+      html {
+        height: 100%;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background-color: #f5f5f5;
+        text-align: center;
+        background: url("./imagenes/bg-todoxchile.avif") no-repeat center center;
+        background-size: cover;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-self: center;
+        min-width: 800px;
+        margin: 0 auto;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      .image-container {
+        margin: 20px 0;
+        position: relative;
+      }
+      .camera-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        transition: opacity 0.3s ease;
+      }
+      .no-image {
+        padding: 40px;
+        background-color: #333;
+        border-radius: 4px;
+        color: #f3f3f3;
+      }
+      .capture-btn {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+      }
+      .capture-btn:hover {
+        background-color: #45a049;
+      }
+      .timestamp {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+      .refresh-btn {
+        background-color: #2196f3;
+        margin-left: 10px;
+      }
+      .refresh-btn:hover {
+        background-color: #0b7dda;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+        background-color: #ccc;
+      }
+      .status-indicator.connected {
+        background-color: #4caf50;
+      }
+      .status-message {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 10px;
+      }
+      @keyframes blink {
+        0% {
+          opacity: 1;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        50% {
+          opacity: 0.5;
         }
-        h1 {
-            color: #333;
+        100% {
+          opacity: 1;
         }
-        .image-container {
-            margin: 20px 0;
-            position: relative;
-        }
-        .camera-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            transition: opacity 0.3s ease;
-        }
-        .no-image {
-            padding: 40px;
-            background-color: #eee;
-            border-radius: 4px;
-            color: #666;
-        }
-        .capture-btn {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 10px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-        .capture-btn:hover {
-            background-color: #45a049;
-        }
-        .timestamp {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .refresh-btn {
-            background-color: #2196F3;
-            margin-left: 10px;
-        }
-        .refresh-btn:hover {
-            background-color: #0b7dda;
-        }
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-            background-color: #ccc;
-        }
-        .status-indicator.connected {
-            background-color: #4CAF50;
-        }
-        .status-message {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        .updating {
-            animation: blink 1s infinite;
-        }
+      }
+      .updating {
+        animation: blink 1s infinite;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Raspberry Pi Camera</h1>
-        
-        <div class="status-message">
-            <span class="status-indicator" id="status-indicator"></span>
-            <span id="status-text">Verificando actualizaciones...</span>
-        </div>
-        
-        <div class="image-container">
-            <% if (latestImage) { %>
-                <img src="<%= latestImage %>" alt="Última imagen capturada" class="camera-image" id="camera-image">
-                <p class="timestamp">Última actualización: <span id="timestamp"><%= timestamp %></span></p>
-                <input type="hidden" id="current-image-path" value="<%= latestImage %>">
-            <% } else { %>
-                <div class="no-image" id="no-image-container">
-                    <p>No hay imágenes disponibles</p>
-                    <p>Haz clic en el botón "Capturar nueva imagen" para tomar una foto</p>
-                </div>
-            <% } %>
-        </div>
-        
-        <div>
-            <button id="capture-btn" class="capture-btn">Capturar nueva imagen</button>
-            <button id="check-updates-btn" class="capture-btn refresh-btn">Verificar actualizaciones</button>
-        </div>
+      <div class="status-message">
+        <span class="status-indicator" id="status-indicator"></span>
+        <span id="status-text">Verificando actualizaciones...</span>
+      </div>
 
-        <div style="margin-top: 30px;">
-            <h3>Enlaces útiles:</h3>
-            <p>
-                <a href="/ultima">Ver información de la última imagen (JSON)</a>
-                <br>
-                <a href="/lista">Ver todas las imágenes disponibles (JSON)</a>
-            </p>
+      <div class="image-container">
+        <% if (latestImage) { %>
+        <img
+          src="<%= latestImage %>"
+          alt="Última imagen capturada"
+          class="camera-image"
+          id="camera-image"
+        />
+        <p class="timestamp">
+          Última actualización: <span id="timestamp"><%= timestamp %></span>
+        </p>
+        <input
+          type="hidden"
+          id="current-image-path"
+          value="<%= latestImage %>"
+        />
+        <% } else { %>
+        <div class="no-image" id="no-image-container">
+          <p>No hay imágenes disponibles</p>
+          <!-- <p>
+            Haz clic en el botón "Capturar nueva imagen" para tomar una foto
+          </p> -->
         </div>
+        <% } %>
+      </div>
+
+      <div style="display: none">
+        <button id="capture-btn" class="capture-btn">
+          Capturar nueva imagen
+        </button>
+        <button id="check-updates-btn" class="capture-btn refresh-btn">
+          Verificar actualizaciones
+        </button>
+      </div>
+
+      <div style="margin-top: 30px; display: none">
+        <h3>Enlaces útiles:</h3>
+        <p>
+          <a href="/ultima">Ver información de la última imagen (JSON)</a>
+          <br />
+          <a href="/lista">Ver todas las imágenes disponibles (JSON)</a>
+        </p>
+      </div>
     </div>
 
     <script>
-        // Referencias a elementos del DOM
-        const cameraImage = document.getElementById('camera-image');
-        const timestampElement = document.getElementById('timestamp');
-        const currentImagePath = document.getElementById('current-image-path');
-        const noImageContainer = document.getElementById('no-image-container');
-        const captureBtn = document.getElementById('capture-btn');
-        const checkUpdatesBtn = document.getElementById('check-updates-btn');
-        const statusIndicator = document.getElementById('status-indicator');
-        const statusText = document.getElementById('status-text');
-        
-        let checkingForUpdates = false;
-        let currentImageSrc = currentImagePath ? currentImagePath.value : null;
-        
-        // Función para formatear la fecha
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleString();
+      // Referencias a elementos del DOM
+      const cameraImage = document.getElementById("camera-image");
+      const timestampElement = document.getElementById("timestamp");
+      const currentImagePath = document.getElementById("current-image-path");
+      const noImageContainer = document.getElementById("no-image-container");
+      const captureBtn = document.getElementById("capture-btn");
+      const checkUpdatesBtn = document.getElementById("check-updates-btn");
+      const statusIndicator = document.getElementById("status-indicator");
+      const statusText = document.getElementById("status-text");
+
+      let checkingForUpdates = false;
+      let currentImageSrc = currentImagePath ? currentImagePath.value : null;
+
+      // Función para formatear la fecha
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString();
+      }
+
+      // Formatear la fecha mostrada
+      document.addEventListener("DOMContentLoaded", () => {
+        if (timestampElement) {
+          timestampElement.textContent = formatDate(
+            timestampElement.textContent
+          );
         }
-        
-        // Formatear la fecha mostrada
-        document.addEventListener('DOMContentLoaded', () => {
-            if (timestampElement) {
-                timestampElement.textContent = formatDate(timestampElement.textContent);
+
+        // Configurar verificación automática
+        setInterval(checkForNewImage, 5000); // Verificar cada 5 segundos
+        updateConnectionStatus(true);
+      });
+
+      // Verificar si hay una nueva imagen
+      function checkForNewImage() {
+        if (checkingForUpdates) return;
+
+        checkingForUpdates = true;
+        updateConnectionStatus(null, "Verificando actualizaciones...");
+
+        fetch("/ultima")
+          .then((response) => response.json())
+          .then((data) => {
+            if (
+              data.url &&
+              (!currentImageSrc || data.url !== currentImageSrc)
+            ) {
+              updateImage(data.url, data.timestamp);
             }
-            
-            // Configurar verificación automática
-            setInterval(checkForNewImage, 5000); // Verificar cada 5 segundos
-            updateConnectionStatus(true);
+            updateConnectionStatus(
+              true,
+              "Conectado - Última verificación: " +
+                new Date().toLocaleTimeString()
+            );
+          })
+          .catch((error) => {
+            console.error("Error al verificar actualizaciones:", error);
+            updateConnectionStatus(false, "Error de conexión. Reintentando...");
+          })
+          .finally(() => {
+            checkingForUpdates = false;
+          });
+      }
+
+      // Actualizar la imagen en la página
+      function updateImage(imageUrl, timestamp) {
+        // Si no hay imagen y ahora tenemos una
+        if (!currentImageSrc && imageUrl) {
+          // Reemplazar el contenedor "no hay imagen" con una imagen real
+          if (noImageContainer) {
+            const imageContainer = noImageContainer.parentElement;
+
+            // Crear nueva imagen
+            const newImage = document.createElement("img");
+            newImage.src = imageUrl;
+            newImage.alt = "Última imagen capturada";
+            newImage.className = "camera-image";
+            newImage.id = "camera-image";
+
+            // Crear elemento timestamp
+            const timestampPara = document.createElement("p");
+            timestampPara.className = "timestamp";
+            const timestampSpan = document.createElement("span");
+            timestampSpan.id = "timestamp";
+            timestampSpan.textContent = formatDate(timestamp);
+            timestampPara.appendChild(
+              document.createTextNode("Última actualización: ")
+            );
+            timestampPara.appendChild(timestampSpan);
+
+            // Crear input oculto para guardar ruta
+            const hiddenInput = document.createElement("input");
+            hiddenInput.type = "hidden";
+            hiddenInput.id = "current-image-path";
+            hiddenInput.value = imageUrl;
+
+            // Reemplazar contenido
+            imageContainer.innerHTML = "";
+            imageContainer.appendChild(newImage);
+            imageContainer.appendChild(timestampPara);
+            imageContainer.appendChild(hiddenInput);
+
+            // Actualizar variables
+            currentImageSrc = imageUrl;
+          }
+        }
+        // Si ya hay una imagen y tenemos una nueva
+        else if (currentImageSrc && imageUrl !== currentImageSrc) {
+          if (cameraImage) {
+            // Efecto de actualización
+            cameraImage.classList.add("updating");
+
+            // Actualizar la imagen con la nueva URL
+            setTimeout(() => {
+              cameraImage.src = imageUrl;
+              if (timestampElement) {
+                timestampElement.textContent = formatDate(timestamp);
+              }
+              if (currentImagePath) {
+                currentImagePath.value = imageUrl;
+              }
+              currentImageSrc = imageUrl;
+
+              // Quitar efecto después de cargar
+              cameraImage.onload = function () {
+                setTimeout(() => {
+                  cameraImage.classList.remove("updating");
+                }, 500);
+              };
+            }, 300);
+          }
+        }
+      }
+
+      // Actualizar indicador de estado de conexión
+      function updateConnectionStatus(connected, message) {
+        if (connected === null) {
+          // Estado de verificación
+          statusIndicator.className = "status-indicator";
+          statusIndicator.style.backgroundColor = "#FFA500"; // Naranja
+        } else if (connected) {
+          // Conectado
+          statusIndicator.className = "status-indicator connected";
+        } else {
+          // Desconectado
+          statusIndicator.className = "status-indicator";
+          statusIndicator.style.backgroundColor = "#FF0000"; // Rojo
+        }
+
+        if (message) {
+          statusText.textContent = message;
+        }
+      }
+
+      // Eventos de botones
+      if (captureBtn) {
+        captureBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          updateConnectionStatus(null, "Capturando imagen...");
+
+          fetch("/capturar")
+            .then((response) => response.json())
+            .then((data) => {
+              updateImage(data.url, data.timestamp);
+              updateConnectionStatus(true, "Imagen capturada exitosamente");
+            })
+            .catch((error) => {
+              console.error("Error al capturar imagen:", error);
+              updateConnectionStatus(false, "Error al capturar la imagen");
+            });
         });
-        
-        // Verificar si hay una nueva imagen
-        function checkForNewImage() {
-            if (checkingForUpdates) return;
-            
-            checkingForUpdates = true;
-            updateConnectionStatus(null, 'Verificando actualizaciones...');
-            
-            fetch('/ultima')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.url && (!currentImageSrc || data.url !== currentImageSrc)) {
-                        updateImage(data.url, data.timestamp);
-                    }
-                    updateConnectionStatus(true, 'Conectado - Última verificación: ' + new Date().toLocaleTimeString());
-                })
-                .catch(error => {
-                    console.error('Error al verificar actualizaciones:', error);
-                    updateConnectionStatus(false, 'Error de conexión. Reintentando...');
-                })
-                .finally(() => {
-                    checkingForUpdates = false;
-                });
-        }
-        
-        // Actualizar la imagen en la página
-        function updateImage(imageUrl, timestamp) {
-            // Si no hay imagen y ahora tenemos una
-            if (!currentImageSrc && imageUrl) {
-                // Reemplazar el contenedor "no hay imagen" con una imagen real
-                if (noImageContainer) {
-                    const imageContainer = noImageContainer.parentElement;
-                    
-                    // Crear nueva imagen
-                    const newImage = document.createElement('img');
-                    newImage.src = imageUrl;
-                    newImage.alt = "Última imagen capturada";
-                    newImage.className = "camera-image";
-                    newImage.id = "camera-image";
-                    
-                    // Crear elemento timestamp
-                    const timestampPara = document.createElement('p');
-                    timestampPara.className = "timestamp";
-                    const timestampSpan = document.createElement('span');
-                    timestampSpan.id = "timestamp";
-                    timestampSpan.textContent = formatDate(timestamp);
-                    timestampPara.appendChild(document.createTextNode('Última actualización: '));
-                    timestampPara.appendChild(timestampSpan);
-                    
-                    // Crear input oculto para guardar ruta
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = "hidden";
-                    hiddenInput.id = "current-image-path";
-                    hiddenInput.value = imageUrl;
-                    
-                    // Reemplazar contenido
-                    imageContainer.innerHTML = '';
-                    imageContainer.appendChild(newImage);
-                    imageContainer.appendChild(timestampPara);
-                    imageContainer.appendChild(hiddenInput);
-                    
-                    // Actualizar variables
-                    currentImageSrc = imageUrl;
-                }
-            } 
-            // Si ya hay una imagen y tenemos una nueva
-            else if (currentImageSrc && imageUrl !== currentImageSrc) {
-                if (cameraImage) {
-                    // Efecto de actualización
-                    cameraImage.classList.add('updating');
-                    
-                    // Actualizar la imagen con la nueva URL
-                    setTimeout(() => {
-                        cameraImage.src = imageUrl;
-                        if (timestampElement) {
-                            timestampElement.textContent = formatDate(timestamp);
-                        }
-                        if (currentImagePath) {
-                            currentImagePath.value = imageUrl;
-                        }
-                        currentImageSrc = imageUrl;
-                        
-                        // Quitar efecto después de cargar
-                        cameraImage.onload = function() {
-                            setTimeout(() => {
-                                cameraImage.classList.remove('updating');
-                            }, 500);
-                        };
-                    }, 300);
-                }
-            }
-        }
-        
-        // Actualizar indicador de estado de conexión
-        function updateConnectionStatus(connected, message) {
-            if (connected === null) {
-                // Estado de verificación
-                statusIndicator.className = 'status-indicator';
-                statusIndicator.style.backgroundColor = '#FFA500'; // Naranja
-            } else if (connected) {
-                // Conectado
-                statusIndicator.className = 'status-indicator connected';
-            } else {
-                // Desconectado
-                statusIndicator.className = 'status-indicator';
-                statusIndicator.style.backgroundColor = '#FF0000'; // Rojo
-            }
-            
-            if (message) {
-                statusText.textContent = message;
-            }
-        }
-        
-        // Eventos de botones
-        if (captureBtn) {
-            captureBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                updateConnectionStatus(null, 'Capturando imagen...');
-                
-                fetch('/capturar')
-                    .then(response => response.json())
-                    .then(data => {
-                        updateImage(data.url, data.timestamp);
-                        updateConnectionStatus(true, 'Imagen capturada exitosamente');
-                    })
-                    .catch(error => {
-                        console.error('Error al capturar imagen:', error);
-                        updateConnectionStatus(false, 'Error al capturar la imagen');
-                    });
-            });
-        }
-        
-        if (checkUpdatesBtn) {
-            checkUpdatesBtn.addEventListener('click', function() {
-                checkForNewImage();
-            });
-        }
+      }
+
+      if (checkUpdatesBtn) {
+        checkUpdatesBtn.addEventListener("click", function () {
+          checkForNewImage();
+        });
+      }
     </script>
-</body>
+  </body>
 </html>
